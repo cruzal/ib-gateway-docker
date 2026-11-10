@@ -1,0 +1,19 @@
+# Third-party jars that IB Gateway bundles at versions with published CVEs, and the
+# release that replaces each one. Format: <sha256> <path under Maven Central>.
+# override-jars.sh swaps a bundled jar only when the bundled version is OLDER than the
+# one listed here, so an IBKR release that ships a newer copy is left alone.
+#
+# 2.12.3 -> 2.18.12: CVE-2020-36518, CVE-2021-46877, CVE-2022-42003, CVE-2022-42004,
+#   CVE-2025-52999, CVE-2026-54512, CVE-2026-54513, CVE-2026-68494, CVE-2026-89425,
+#   CVE-2026-91776, CVE-2026-91777. 2.18 is the oldest line with all of them fixed;
+#   jackson keeps 2.x binary compatible, and the three jars move together.
+367afb4be3efa8a1636200b5faefb67d7d0a1b730f64ec55a971229cb673bc23 com/fasterxml/jackson/core/jackson-core/2.18.12/jackson-core-2.18.12.jar
+02b62d64819bc1dbad7f1195c805f950ab3dceef1a479d0e9c55d99b7a04c255 com/fasterxml/jackson/core/jackson-databind/2.18.12/jackson-databind-2.18.12.jar
+143b94dd8caa3d5eb4417672f7d00472cec33626cbcb0fd35f0616de0dbccabf com/fasterxml/jackson/core/jackson-annotations/2.18.12/jackson-annotations-2.18.12.jar
+# 2.11.0 -> 2.22.0: CVE-2024-47554.
+2b9a7b1f726fb86216dbd2c8321eabe0221dbd5b1be81c18e1cb53811b104758 commons-io/commons-io/2.22.0/commons-io-2.22.0.jar
+# 2.25.3 -> 2.25.5 (same line, patch releases): CVE-2026-34477, -34478, -34479, -34480,
+#   CVE-2026-49844. The three log4j jars move together.
+64777f73ea0b3104c04eb82befbdccc30a425a19e83ad06cb2f93aa303511863 org/apache/logging/log4j/log4j-api/2.25.5/log4j-api-2.25.5.jar
+050c4f85deb48b055e9c041ac39043fbb79ce477841a11a1eb2969c86c6a0072 org/apache/logging/log4j/log4j-core/2.25.5/log4j-core-2.25.5.jar
+8cab16dd6fc4c8f14c1c473022cb217512f2bbb2d59a70f8ec90a268d64d8831 org/apache/logging/log4j/log4j-slf4j2-impl/2.25.5/log4j-slf4j2-impl-2.25.5.jar

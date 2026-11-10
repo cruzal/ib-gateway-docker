@@ -167,6 +167,10 @@ setup_ssh() {
 	# prepare SSH Tunnel
 	if [ "$SSH_TUNNEL" = "yes" ] || [ "$SSH_TUNNEL" = "both" ]; then
 		echo ".> Setting SSH tunnel"
+		if ! command -v ssh >/dev/null; then
+			echo ".> SSH_TUNNEL is set but this image ships without ssh (removed to shrink its attack surface)." >&2
+			exit 1
+		fi
 
 		_SSH_OPTIONS="-o ServerAliveInterval=${SSH_ALIVE_INTERVAL:-20}"
 		_SSH_OPTIONS+=" -o ServerAliveCountMax=${SSH_ALIVE_COUNT:-3}"

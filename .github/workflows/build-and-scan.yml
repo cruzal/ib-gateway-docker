@@ -1,0 +1,64 @@
+# The fork's only workflow. It builds the gateway image (amd64, the arch it runs on),
+# fails on any fixable HIGH or CRITICAL Trivy finding, and smoke-tests the result
+# offline. Nothing is pushed anywhere. The weekly run catches fixes Ubuntu ships
+# after the last build: a red run there means bump APT_REFRESH and rebuild wherever
+# the image is deployed. Upstream's release bots and publish jobs were removed;
+# upstream changes come in by merging upstream/master into `heroic` (see HEROIC.md).
+name: Build and scan
+
+on:
+  push:
+    branches: [heroic]
+  pull_request:
+    branches: [heroic]
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-scan:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        channel: [stable, latest]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build ${{ matrix.channel }}
+        uses: docker/build-push-action@v7
+        with:
+          context: ./${{ matrix.channel }}
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: ib-gateway:${{ matrix.channel }}
+
+      # Trivy from its pinned image rather than trivy-action, whose tags were hijacked
+      # in 2026; same version as the lab's scanner.
+      - name: Trivy (fixable HIGH/CRITICAL fail the job)
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:0.75.0 image --quiet --ignore-unfixed \
+            --severity HIGH,CRITICAL --exit-code 1 ib-gateway:${{ matrix.channel }}
+
+      # No network and a made-up user, so it can never reach a real IBKR session.
+      # Passes when IBC gets as far as clicking Log In with the swapped jars loaded,
+      # and the healthcheck reports "not logged in".
+      - name: Smoke test
+        run: |
+          docker run -d --name gw --network none -e TRADING_MODE=paper \
+            -e TWS_USERID=nobody -e TWS_PASSWORD=nobody ib-gateway:${{ matrix.channel }}
+          for i in $(seq 1 36); do
+            docker logs gw 2>&1 | grep -q "IBC: Click button: Paper Log In" && break
+            sleep 5
+          done
+          docker logs gw 2>&1 | grep "IBC:" | tail -30
+          docker logs gw 2>&1 | grep -q "IBC: Click button: Paper Log In"
+          ! docker logs gw 2>&1 | grep -E "NoClassDefFoundError|NoSuchMethodError|ClassNotFoundException|LinkageError"
+          ! docker exec gw /home/ibgateway/scripts/healthcheck.sh
